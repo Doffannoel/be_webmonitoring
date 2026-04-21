@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import EnergyReading, CarbonFootprint, Alert, EnergyPrediction
+
+from .models import Alert, CarbonFootprint, EnergyPrediction, EnergyReading
+
 
 @admin.register(EnergyReading)
 class EnergyReadingAdmin(admin.ModelAdmin):
@@ -8,16 +10,19 @@ class EnergyReadingAdmin(admin.ModelAdmin):
     search_fields = ("device__device_id", "device__name")
     ordering = ("-timestamp",)
 
+
 @admin.register(CarbonFootprint)
 class CarbonFootprintAdmin(admin.ModelAdmin):
     list_display = ("date", "total_kwh", "emission_factor", "emission_kg_co2")
     ordering = ("-date",)
+
 
 @admin.register(Alert)
 class AlertAdmin(admin.ModelAdmin):
     list_display = ("timestamp", "severity", "alert_type", "device", "is_resolved")
     list_filter = ("severity", "is_resolved", "alert_type")
     search_fields = ("message", "device__device_id")
+
 
 @admin.register(EnergyPrediction)
 class EnergyPredictionAdmin(admin.ModelAdmin):

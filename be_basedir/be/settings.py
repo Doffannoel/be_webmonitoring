@@ -38,11 +38,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
     'django_filters',
     'drf_spectacular',
     'monitoring',
     'core',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -107,10 +109,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        # kosong dulu biar gak ribet, nanti bisa tambah JWT
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
@@ -125,8 +127,27 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Energy Monitoring API",
-    "DESCRIPTION": "Backend API for IoT Energy Monitoring + Carbon Footprint + Prediction",
+    "DESCRIPTION": """
+Backend API for Energy Monitoring System
+
+Features:
+- Authentication (JWT)
+- Energy readings ingestion (IoT)
+- Analytics (daily, weekly, monthly)
+- Alerts & threshold monitoring
+- Carbon footprint tracking
+
+Auth:
+- Use Bearer Token (JWT)
+- Example: Authorization: Bearer <access_token>
+""",
     "VERSION": "1.0.0",
+}
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
 
