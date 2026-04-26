@@ -16,6 +16,47 @@ Backend ini dirancang agar **mudah dipahami oleh Frontend Developer**, Data/AI E
 
 ---
 
+## 🎯 Demo Data / Seed
+
+Untuk kebutuhan development frontend, backend ini menyediakan management command untuk mengisi data dummy secara otomatis.
+
+### Jalankan seed
+
+```bash
+python manage.py seed_demo_data --reset
+```
+
+Perintah di atas akan membuat data dummy untuk:
+
+* Building
+* Room
+* Device
+* ThresholdSettings
+* ThresholdRule
+* EnergyReading
+* CarbonFootprint
+* Alert
+* EnergyPrediction
+
+### Opsi tambahan
+
+```bash
+python manage.py seed_demo_data --reset --days 30 --readings-per-device 3
+```
+
+Keterangan:
+
+* `--reset` menghapus data demo lama lalu membuat ulang dari awal
+* `--days` menentukan jumlah hari histori reading yang digenerate
+* `--readings-per-device` menentukan jumlah reading per device per hari
+
+### Catatan
+
+* Jika data demo sudah ada, command akan berhenti aman dan meminta `--reset`
+* Seed ini dibuat supaya frontend tidak perlu hit API satu per satu untuk mengisi state awal dashboard
+
+---
+
 ## 🧱 Tech Stack
 
 * Python 3.x
