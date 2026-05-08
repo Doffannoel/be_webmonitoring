@@ -35,6 +35,7 @@ myworld/
 venv/
 .env/
 .env.*
+!.env.example
 
 # =============================
 
