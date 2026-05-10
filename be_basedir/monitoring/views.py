@@ -10,8 +10,9 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from rest_framework import status, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from core.models import Device
@@ -23,6 +24,15 @@ from .serializers import (
     EnergyReadingSerializer,
 )
 from .services import evaluate_thresholds, update_daily_carbon_for_date
+
+
+class IngestEnergyReadingRequestSerializer(serializers.Serializer):
+    device_id = serializers.CharField()
+    timestamp = serializers.DateTimeField(required=False)
+    voltage = serializers.FloatField(required=False)
+    current = serializers.FloatField(required=False)
+    power_watt = serializers.FloatField(required=False)
+    energy_kwh = serializers.FloatField(required=False)
 
 
 @extend_schema_view(
@@ -79,14 +89,14 @@ Field request:
 - energy_kwh: float, opsional
 
 Side effects:
+- auto-register device jika device_id baru pertama kali muncul
 - update carbon footprint harian
 - evaluate threshold rules dan generate alert jika perlu
 """,
-        request=None,
+        request=IngestEnergyReadingRequestSerializer,
         responses={
             201: EnergyReadingSerializer,
             400: OpenApiResponse(description="device_id tidak dikirim / payload tidak valid"),
-            404: OpenApiResponse(description="Device tidak ditemukan"),
         },
         tags=["Monitoring / Readings"],
         examples=[
@@ -104,7 +114,7 @@ Side effects:
             )
         ],
     )
-    @action(detail=False, methods=["post"], url_path="ingest")
+    @action(detail=False, methods=["post"], permission_classes=[AllowAny], url_path="ingest")
     def ingest(self, request):
         device_id = request.data.get("device_id")
         if not device_id:
@@ -115,9 +125,11 @@ Side effects:
 
         device = Device.objects.filter(device_id=device_id).first()
         if not device:
-            return Response(
-                {"detail": f"Device dengan device_id '{device_id}' tidak ditemukan."},
-                status=status.HTTP_404_NOT_FOUND,
+            device = Device.objects.create(
+                device_id=device_id,
+                name=f"Device {device_id}",
+                device_type="other",
+                is_active=True,
             )
 
         payload = {

@@ -27,7 +27,24 @@ class DeviceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Device
-        fields = "__all__"
+        fields = (
+            "id",
+            "device_id",
+            "name",
+            "device_type",
+            "room",
+            "room_name",
+            "room_code",
+            "building_code",
+            "floor_label",
+            "activity_label",
+            "floor",
+            "activity",
+            "capacity_watt",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
 
     def get_floor(self, obj):
         return obj.floor_label or (obj.room.floor if obj.room else "")

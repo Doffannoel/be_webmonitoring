@@ -27,6 +27,13 @@ class UserViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_permissions(self):
+        if self.action == "signup":
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+
     @extend_schema(
         summary="Get current user profile",
         description="Mengambil data profile user yang sedang login.",
