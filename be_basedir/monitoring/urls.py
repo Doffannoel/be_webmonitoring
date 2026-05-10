@@ -1,9 +1,9 @@
 from django.urls import include, path
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
 from .views import AlertViewSet, AnalyticsViewSet, CarbonFootprintViewSet, EnergyPredictionViewSet, EnergyReadingViewSet
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register(r"readings", EnergyReadingViewSet, basename="readings")
 router.register(r"carbon", CarbonFootprintViewSet, basename="carbon")
 router.register(r"alerts", AlertViewSet, basename="alerts")

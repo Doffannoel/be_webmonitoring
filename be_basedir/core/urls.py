@@ -1,5 +1,5 @@
 from django.urls import include, path
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
 from .views import (
     BuildingViewSet,
@@ -9,7 +9,7 @@ from .views import (
     ThresholdSettingsViewSet,
 )
 
-router = DefaultRouter()
+router = SimpleRouter()
 router.register(r"buildings", BuildingViewSet, basename="buildings")
 router.register(r"rooms", RoomViewSet, basename="rooms")
 router.register(r"devices", DeviceViewSet, basename="devices")
