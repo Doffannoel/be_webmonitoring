@@ -1,11 +1,82 @@
 from datetime import date
+import logging
 
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
 from django.db.models import Avg, Sum
 from django.utils import timezone
 
 from core.models import ThresholdRule, ThresholdSettings
 
-from .models import Alert, CarbonFootprint
+from .models import Alert, AlertNotificationContact, CarbonFootprint
+
+logger = logging.getLogger(__name__)
+
+def get_alert_recipients(device):
+    recipients = []
+
+    recipients.extend(
+        AlertNotificationContact.objects.filter(device=device, is_active=True)
+        .exclude(email="")
+        .values_list("email", flat=True)
+    )
+
+    if getattr(device, "user", None) and device.user.email:
+        recipients.append(device.user.email)
+
+    if not recipients:
+        recipients.extend(
+            User.objects.filter(is_active=True)
+            .exclude(email="")
+            .values_list("email", flat=True)
+        )
+
+    seen = set()
+    unique_recipients = []
+    for email in recipients:
+        normalized = (email or "").strip().lower()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            unique_recipients.append(email.strip())
+
+    return unique_recipients
+
+
+def send_alert_email(recipients: list[str], device_name: str, alert_type: str, severity: str, message: str):
+    if not recipients:
+        return
+
+    severity_prefix = {
+        "critical": "CRITICAL",
+        "warning": "WARNING",
+        "info": "INFO",
+    }
+    prefix = severity_prefix.get(severity, "ALERT")
+    subject = f"[{prefix}] Energy Alert: {device_name}"
+    email_body = (
+        "Dear User,\n\n"
+        "An energy monitoring alert has been triggered:\n\n"
+        f"Device: {device_name}\n"
+        f"Alert Type: {alert_type.replace('_', ' ').title()}\n"
+        f"Severity: {severity.upper()}\n"
+        f"Message: {message}\n\n"
+        f"Timestamp: {timezone.localtime().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+        "Please check your dashboard for more details and take necessary action.\n\n"
+        "---\n"
+        "Energy Monitoring System\n"
+    )
+
+    try:
+        send_mail(
+            subject=subject,
+            message=email_body,
+            from_email=None,
+            recipient_list=recipients,
+            fail_silently=False,
+        )
+        logger.info("Alert email sent to %s for device %s", recipients, device_name)
+    except Exception:
+        logger.exception("Failed to send alert email for device %s", device_name)
 
 
 def update_daily_carbon_for_date(target_date: date, emission_factor: float = 0.80):
@@ -35,6 +106,14 @@ def create_alert_if_missing(device, alert_type: str, severity: str, message: str
     ).exists()
     if not already_exists:
         Alert.objects.create(device=device, alert_type=alert_type, severity=severity, message=message)
+        recipients = get_alert_recipients(device)
+        send_alert_email(
+            recipients=recipients,
+            device_name=device.name,
+            alert_type=alert_type,
+            severity=severity,
+            message=message,
+        )
 
 
 def evaluate_thresholds(device, power_watt: float | None, reading_date=None):

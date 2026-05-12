@@ -34,6 +34,15 @@ class DeviceViewSet(viewsets.ModelViewSet):
     search_fields = ["device_id", "name", "room__name", "room__code", "floor_label", "activity_label"]
     ordering_fields = ["device_id", "name", "updated_at"]
 
+    def perform_create(self, serializer):
+        user = self.request.user if self.request.user.is_authenticated else None
+        serializer.save(user=user)
+
+    def perform_update(self, serializer):
+        device = self.get_object()
+        user = device.user or (self.request.user if self.request.user.is_authenticated else None)
+        serializer.save(user=user)
+
 
 class ThresholdRuleViewSet(viewsets.ModelViewSet):
     queryset = ThresholdRule.objects.select_related("device", "room").all().order_by("-updated_at")

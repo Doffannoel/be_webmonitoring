@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 
 class TimeStampedModel(models.Model):
@@ -50,6 +51,13 @@ class Device(TimeStampedModel):
     brand = models.CharField(max_length=100, blank=True, null=True, default="")
     model = models.CharField(max_length=100, blank=True, null=True, default="")
     capacity_watt = models.FloatField(null=True, blank=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="devices",
+    )
     is_active = models.BooleanField(default=True)
 
     def __str__(self):

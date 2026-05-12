@@ -69,3 +69,18 @@ class EnergyPrediction(models.Model):
 
     def __str__(self):
         return f"{self.date} pred={self.predicted_kwh} ({self.model_version})"
+
+
+class AlertNotificationContact(models.Model):
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="notification_contacts")
+    email = models.EmailField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("device", "email")]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.device.name} -> {self.email}"
