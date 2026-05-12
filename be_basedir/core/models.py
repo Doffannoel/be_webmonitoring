@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class TimeStampedModel(models.Model):
@@ -45,6 +46,7 @@ class Device(TimeStampedModel):
     name = models.CharField(max_length=120)
     device_type = models.CharField(max_length=20, choices=DEVICE_TYPES, default="meter")
     room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True, related_name="devices")
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="devices")
     floor_label = models.CharField(max_length=50, blank=True, default="")
     activity_label = models.CharField(max_length=100, blank=True, default="")
     brand = models.CharField(max_length=100, blank=True, null=True, default="")

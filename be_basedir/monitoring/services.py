@@ -1,11 +1,71 @@
 from datetime import date
+import logging
 
+from django.core.mail import send_mail
 from django.db.models import Avg, Sum
 from django.utils import timezone
 
 from core.models import ThresholdRule, ThresholdSettings
 
 from .models import Alert, CarbonFootprint
+
+logger = logging.getLogger(__name__)
+
+
+def send_alert_email(user_email: str, device_name: str, alert_type: str, severity: str, message: str):
+    """
+    Send alert notification email to user.
+    
+    Args:
+        user_email: Email address of the user
+        device_name: Name of the device
+        alert_type: Type of alert (threshold, daily_usage_limit, peak_demand, etc)
+        severity: Severity level (info, warning, critical)
+        message: Alert message
+    """
+    if not user_email:
+        return
+    
+    try:
+        # Format email subject based on severity
+        severity_prefix = {
+            'critical': '⚠️ CRITICAL',
+            'warning': '⚡ WARNING',
+            'info': 'ℹ️ INFO'
+        }
+        prefix = severity_prefix.get(severity, 'Alert')
+        
+        subject = f"[{prefix}] Energy Alert: {device_name}"
+        
+        # Format email body
+        email_body = f"""
+Dear User,
+
+An energy monitoring alert has been triggered:
+
+Device: {device_name}
+Alert Type: {alert_type.replace('_', ' ').title()}
+Severity: {severity.upper()}
+Message: {message}
+
+Timestamp: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+Please check your dashboard for more details and take necessary action.
+
+---
+Energy Monitoring System
+"""
+        
+        send_mail(
+            subject=subject,
+            message=email_body,
+            from_email=None,  # Will use DEFAULT_FROM_EMAIL
+            recipient_list=[user_email],
+            fail_silently=False,
+        )
+        logger.info(f"Alert email sent to {user_email} for device {device_name}")
+    except Exception as e:
+        logger.error(f"Failed to send alert email to {user_email}: {str(e)}")
 
 
 def update_daily_carbon_for_date(target_date: date, emission_factor: float = 0.80):
@@ -34,7 +94,17 @@ def create_alert_if_missing(device, alert_type: str, severity: str, message: str
         is_resolved=False,
     ).exists()
     if not already_exists:
-        Alert.objects.create(device=device, alert_type=alert_type, severity=severity, message=message)
+        alert = Alert.objects.create(device=device, alert_type=alert_type, severity=severity, message=message)
+        
+        # Send email notification if device has an associated user with email
+        if device.user and device.user.email:
+            send_alert_email(
+                user_email=device.user.email,
+                device_name=device.name,
+                alert_type=alert_type,
+                severity=severity,
+                message=message
+            )
 
 
 def evaluate_thresholds(device, power_watt: float | None, reading_date=None):
